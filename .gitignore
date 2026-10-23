@@ -1,0 +1,16 @@
+.venv/
+instance/
+.env
+__pycache__/
+.pytest_cache/
+*.pyc
+
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*.db
+*.bak
+*.mdf
+*.ldf
+*.zip

@@ -1,0 +1,3 @@
+name,address,lat,lon,phone,cod,service_minutes,note
+Người nhận mẫu 1,Quận 1 TP.HCM,10.7725,106.6980,0900000000,100000,3,Giao tại sảnh
+Người nhận mẫu 2,Tân Định TP.HCM,10.7883,106.6909,0900000001,0,3,Gọi trước khi đến
