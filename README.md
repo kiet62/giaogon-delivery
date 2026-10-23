@@ -187,3 +187,8 @@ Khuyến nghị dùng `scripts/verify_sqlserver.py` thay bộ pytest reset QA kh
 - **Phiếu in/QR:** mỗi đơn có nút In phiếu giao / QR. QR được tạo tại máy chủ và chỉ chứa mã đơn; không gửi thông tin người nhận tới dịch vụ tạo QR bên ngoài. Người quét đăng nhập và tra mã theo quyền. Phiếu hiển thị người nhận, hàng hóa, COD, người trả phí và trạng thái thu phí. QR không cấp quyền truy cập.
 
 Hai bảng thêm: `order_settlements`, `notification_reads`; khởi động ứng dụng sẽ tạo bổ sung, không reset dữ liệu. Cài lại requirements để có thư viện `qrcode`. Sau cập nhật, khởi động lại ứng dụng và tải lại trang. Các biên nhận chỉ ghi nhận nghiệp vụ đã xảy ra, không thực hiện giao dịch ngân hàng.
+
+
+## Chạy trên Render
+
+Xem [RENDER.md](RENDER.md). Repository có Dockerfile cài Microsoft ODBC 18, Gunicorn và render.yaml. Cần SQL Server/Azure SQL có thể kết nối từ Render; database cục bộ Windows không tự được chuyển lên cloud.

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: giaogon-delivery
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /login
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "1"
+      - key: SQLSERVER_CONNECTION_STRING
+        sync: false
