@@ -21,7 +21,7 @@ def main():
             print('Đang tạo môi trường Python cho GiaoGon...', flush=True)
             venv.create(ROOT / '.venv', with_pip=True)
         return subprocess.call([str(env_python), str(ROOT / 'launch.py')])
-    if any(importlib.util.find_spec(m) is None for m in ['flask', 'numpy', 'sqlalchemy', 'pyodbc', 'dotenv', 'PIL']):
+    if any(importlib.util.find_spec(m) is None for m in ['flask', 'numpy', 'sqlalchemy', 'pyodbc', 'dotenv', 'PIL', 'sklearn', 'optuna', 'scipy', 'matplotlib']):
         print('Đang cài thư viện. Lần đầu cần kết nối Internet...', flush=True)
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', str(ROOT / 'requirements.txt')])
     url = 'http://127.0.0.1:5006/'

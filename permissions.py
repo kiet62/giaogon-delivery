@@ -13,6 +13,7 @@ ROLES = {
     'admin': COMMON | DELIVERY | {
         'record_settlement':{'POST'},'users': {'GET','POST'}, 'update_user': {'PATCH'}, 'dashboard': {'GET'},
         'admin_report': {'GET'}, 'bulk_assign': {'POST'}, 'depot': {'PUT'},
+        'rf_hpo_start': {'POST'}, 'rf_hpo_status': {'GET'},
         'add': {'POST'}, 'edit': {'PUT'}, 'assign': {'POST'}, 'import_csv': {'POST'}, 'sample': {'POST'},
         'shipping_quote':{'POST'},'pricing':{'GET','PUT'},'review_remittance':{'POST'},
     },
@@ -20,7 +21,7 @@ ROLES = {
     'customer': COMMON | {'add': {'POST'}, 'customer_cancel': {'POST'},'shipping_quote':{'POST'}},
 }
 TABS = {
-    'admin': ['admin-page','planner','orders-page','history','employees-page','billing-page','profile-page'],
+    'admin': ['admin-page','planner','orders-page','history','employees-page','billing-page','rf-hpo-page','profile-page'],
     'staff': ['planner','orders-page','history','billing-page','profile-page'],
     'customer': ['my-orders-page','profile-page'],
 }

@@ -192,3 +192,27 @@ Hai bảng thêm: `order_settlements`, `notification_reads`; khởi động ứn
 ## Chạy trên Render
 
 Xem [RENDER.md](RENDER.md). Repository có Dockerfile cài Microsoft ODBC 18, Gunicorn và render.yaml. Cần SQL Server/Azure SQL có thể kết nối từ Render; database cục bộ Windows không tự được chuyển lên cloud.
+
+## So sánh 200 lần chạy NN, GA và PSO
+
+Chạy chương trình benchmark trên cùng danh sách điểm giao. Mặc định dùng bộ dữ liệu mô phỏng gồm 16 điểm giao tại TP.HCM và kho trung tâm; CSV riêng cần các cột `name,lat,lon`:
+
+```powershell
+python scripts/benchmark_200.py
+```
+
+Mặc định chương trình lấy kho trung tâm TP.HCM, chạy GA và PSO với 200 seed cố định khác nhau, và dùng một kết quả Nearest Neighbor làm baseline. Có thể chọn mục tiêu thời gian và tăng/giảm ngân sách tìm kiếm:
+
+```powershell
+python scripts/benchmark_200.py --input samples/benchmark_points.csv --runs 200 --population 60 --iterations 150 --objective distance
+```
+
+Kết quả nằm trong `benchmark-results`: `benchmark_200_runs.csv` lưu từng lượt và tuyến, `benchmark_200_summary.csv` so sánh tốt nhất/trung bình/trung vị/độ lệch chuẩn/thời gian tính và phần trăm cải thiện so với NN, `benchmark_200_convergence.csv` lưu đường hội tụ từng vòng. Có thể đổi vị trí kho bằng `--depot-lat` và `--depot-lon`, hoặc dùng `--open-route` nếu shipper không quay về kho.
+
+Khoảng cách và thời gian di chuyển trong benchmark được ước tính từ Haversine và tốc độ mặc định 25 km/h; chương trình không mô phỏng tình trạng giao thông hay quãng đường đường bộ. “Tốt nhất” là nghiệm tốt nhất tìm thấy trong các lần chạy, không chứng minh tối ưu toàn cục. NN là thuật toán xác định nên chỉ cần tính một lần; 200 seed được áp dụng riêng cho mỗi thuật toán ngẫu nhiên GA và PSO.
+
+## Thí nghiệm Random Forest HPO trong web
+
+Đăng nhập bằng Admin, mở **Thí nghiệm RF**, chọn dữ liệu mô phỏng hoặc tải CSV có cột nhãn nhị phân `0/1`, rồi bấm **Chạy so sánh**. Trang chạy baseline Random Forest mặc định, Grid Search, Random Search và Bayesian TPE với cùng ngân sách; kết quả gồm AUC CV/test, Average Precision, thời gian chạy, độ trễ suy luận, cấu hình tốt nhất, hội tụ và CSV để tải về. CSV cần ít nhất 20 dòng, tối đa 20.000 dòng, 1–100 cột đặc trưng và ít nhất 10 dòng mỗi nhãn. Mặc định dùng 5-fold CV; trang giới hạn tối đa 72 cấu hình, 3 seed và chỉ chạy một thí nghiệm tại một thời điểm để tránh làm nghẽn web.
+
+Đây là trang thí nghiệm phát hiện giao dịch bất thường, tách khỏi nghiệp vụ giao hàng. AUC/AP đo chất lượng phân loại nhãn, không thể so sánh trực tiếp với km hoặc thời gian giao hàng. Kết quả của dữ liệu mô phỏng chỉ minh họa; CSV tải lên được xử lý trong bộ nhớ và không lưu vào SQL Server.

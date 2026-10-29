@@ -71,6 +71,7 @@ def create_app(test_url=None, testing=False):
             s.add(Setting(id=1, data=json.dumps(DEFAULT_DEPOT)))
     bootstrap_lock = threading.Lock()
     attempts, attempt_lock = {}, threading.Lock()
+    rf_jobs, rf_jobs_lock = {}, threading.Lock()
 
     def csrf():
         if 'csrf' not in session:
@@ -336,6 +337,72 @@ def create_app(test_url=None, testing=False):
             name=u['name'];name="'"+name if name.startswith(('=','+','-','@','\t','\r')) else name
             w.writerow([name,u['active'],u['total'],u['delivered'],u['failed'],u['cod_collected'],u['cod_outstanding']])
         return send_file(io.BytesIO(f.getvalue().encode('utf-8-sig')),mimetype='text/csv',as_attachment=True,download_name='bao-cao-quan-tri.csv')
+
+    def run_rf_job(job_id, frame, options):
+        with rf_jobs_lock:
+            if job_id in rf_jobs:
+                rf_jobs[job_id].update(status='running', stage='Chuẩn bị dữ liệu')
+        def progress(values):
+            with rf_jobs_lock:
+                job = rf_jobs.get(job_id)
+                if job:
+                    job.update(values)
+        try:
+            from rf_hpo_web import run_experiment
+            result = run_experiment(frame=frame, progress=progress, **options)
+            with rf_jobs_lock:
+                rf_jobs[job_id].update(status='completed', stage='Hoàn tất', result=result)
+        except Exception as exc:
+            app.logger.exception('RF HPO experiment failed')
+            with rf_jobs_lock:
+                rf_jobs[job_id].update(status='failed', stage='Có lỗi', error=str(exc)[:500])
+
+    @app.post('/api/rf-hpo')
+    @admin
+    def rf_hpo_start():
+        try:
+            budget = int(request.form.get('budget', 10))
+            seeds = int(request.form.get('seeds', 1))
+            rows = int(request.form.get('rows', 1000))
+            n_max = int(request.form.get('n_max', 300))
+        except (TypeError, ValueError):
+            raise ValueError('Ngân sách, seed, số dòng và n_estimators phải là số nguyên.')
+        if not 1 <= budget <= 72 or not 1 <= seeds <= 3:
+            raise ValueError('Ngân sách từ 1–72 cấu hình; số seed từ 1–3.')
+        if not 200 <= rows <= 10000 or not 200 <= n_max <= 1000 or n_max % 100:
+            raise ValueError('Dữ liệu mô phỏng 200–10.000 dòng; n_estimators tối đa 200–1.000, bước 100.')
+        dataset = request.files.get('dataset')
+        frame = None
+        if dataset and dataset.filename:
+            if not dataset.filename.lower().endswith('.csv'):
+                raise ValueError('Chỉ nhận tệp CSV.')
+            import pandas as pd
+            frame = pd.read_csv(dataset, nrows=20001)
+            if len(frame) > 20000:
+                raise ValueError('CSV tối đa 20.000 dòng.')
+        target = str(request.form.get('target', 'is_fraud')).strip()
+        options = dict(target=target, rows=rows, budget=budget, seeds=seeds, n_max=n_max, jobs=1)
+        job_id = uid()
+        with rf_jobs_lock:
+            if any(job['status'] in ('queued', 'running') for job in rf_jobs.values()):
+                raise Conflict('Đang có một thí nghiệm chạy. Hãy chờ kết quả đó trước khi bắt đầu lượt mới.')
+            for old_id in list(rf_jobs)[:-9]:
+                rf_jobs.pop(old_id, None)
+            rf_jobs[job_id] = dict(id=job_id, status='queued', stage='Đang chờ', done=0,
+                                   total=seeds * (1 + 3 * budget), created=time.time())
+        thread = threading.Thread(target=run_rf_job, args=(job_id, frame, options), daemon=True,
+                                  name='rf-hpo-' + job_id[:8])
+        thread.start()
+        return jsonify(id=job_id, status='queued'), 202
+
+    @app.get('/api/rf-hpo/<job_id>')
+    @admin
+    def rf_hpo_status(job_id):
+        with rf_jobs_lock:
+            job = rf_jobs.get(job_id)
+            if not job:
+                raise NotFound('Không tìm thấy lượt thí nghiệm. Có thể máy chủ đã khởi động lại.')
+            return jsonify(job)
 
     @app.post('/api/admin/bulk-assign')
     @admin
